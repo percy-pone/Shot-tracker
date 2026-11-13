@@ -4,375 +4,772 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Shot Tracker">
+<meta name="apple-mobile-web-app-title" content="Hoops Tracker">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#14161b">
+<meta name="theme-color" content="#10203a">
 <title>Basketball Shot Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #14161b;
-    --card: #1e2128;
-    --card-2: #262a33;
-    --text: #f2f3f5;
-    --muted: #9aa1ad;
-    --orange: #f58220;
-    --green: #2fbf71;
-    --red: #e5484d;
-    --border: #2f343e;
+    --ink: #10203a;        /* gym at night */
+    --paint: #1a3054;      /* the key */
+    --paint-2: #24406d;
+    --line: #f6f3ea;       /* court lines */
+    --chalk: #a9b9d4;
+    --ball: #f26b1d;
+    --make: #3ddc97;
+    --miss: #ff7b7b;
+    --rule: #2f4b7a;
+    --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+    --body: "Barlow", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; }
+  html { background: var(--ink); }
   body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    padding: 16px;
-    padding-top: max(16px, env(safe-area-inset-top));
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
-    min-height: 100vh;
+    margin: 0; font-family: var(--body); font-size: 16px; line-height: 1.4;
+    background: var(--ink); color: var(--line);
+    padding: 14px 16px 104px;
+    padding-top: max(14px, env(safe-area-inset-top));
+    min-height: 100vh; -webkit-text-size-adjust: 100%;
   }
-  .wrap { max-width: 900px; margin: 0 auto; }
-  header {
-    display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
-  }
-  h1 { font-size: 1.5rem; margin: 0; }
-  h1 span { color: var(--orange); }
-  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
-  button {
-    font: inherit; cursor: pointer; border: 1px solid var(--border);
-    background: var(--card-2); color: var(--text);
-    padding: 8px 14px; border-radius: 8px; transition: transform .05s, background .15s;
-  }
-  button:hover { background: #313642; }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  button, select, input, textarea { font: inherit; color: var(--line); }
+  button { cursor: pointer; border: 1px solid var(--rule); background: var(--paint-2); padding: 10px 14px; border-radius: 10px; touch-action: manipulation; font-weight: 600; }
   button:active { transform: scale(.97); }
-  button:disabled { opacity: .4; cursor: default; }
-  .btn-primary { background: var(--orange); border-color: var(--orange); color: #111; font-weight: 600; }
-  .btn-primary:hover { background: #ff9440; }
-  .btn-danger { color: var(--red); }
+  button:disabled { opacity: .35; cursor: default; }
+  :focus-visible { outline: 2px solid var(--line); outline-offset: 2px; }
+  .primary { background: var(--ball); border-color: var(--ball); color: #1a0d03; }
+  .quiet { background: transparent; color: var(--chalk); }
+  .danger { color: var(--miss); background: transparent; }
+  .num { font-family: var(--display); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
 
-  .card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 14px; padding: 16px; margin-bottom: 16px;
-  }
-  .card h2 { font-size: 1rem; margin: 0 0 12px; color: var(--muted); font-weight: 600;
-    text-transform: uppercase; letter-spacing: .05em; }
+  /* top bar */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .top h1 { font-family: var(--display); font-weight: 700; font-size: 1.9rem; line-height: 1; margin: 0; letter-spacing: .01em; }
+  .top p { margin: 2px 0 0; color: var(--chalk); font-size: .9rem; }
+  .daynav { display: flex; gap: 6px; }
+  .daynav button { width: 44px; height: 44px; padding: 0; font-size: 1.3rem; }
 
-  /* Player selector */
-  .players { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .player {
-    border: 2px solid var(--border); border-radius: 12px; padding: 12px;
-    background: var(--card-2); cursor: pointer; text-align: left; color: var(--text);
-  }
-  .player.active { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(245,130,32,.15); }
-  .player input {
-    background: transparent; border: none; border-bottom: 1px dashed var(--muted);
-    color: var(--text); font: inherit; font-weight: 600; font-size: 1rem;
-    width: 100%; padding: 2px 0; outline: none;
-  }
-  .player input::placeholder { color: var(--muted); font-weight: 400; }
-  .player .mini { font-size: .85rem; color: var(--muted); margin-top: 6px; }
-  .player .pts { font-size: 1.6rem; font-weight: 700; margin-top: 4px; }
+  /* jersey tabs */
+  .jerseys { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px 14px; padding: 2px 16px 6px; scrollbar-width: none; }
+  .jerseys::-webkit-scrollbar { display: none; }
+  .jersey { flex: 0 0 auto; min-width: 92px; text-align: left; padding: 8px 12px 9px; border-radius: 12px; background: var(--paint); border: 2px solid transparent; }
+  .jersey b { display: block; font-family: var(--display); font-weight: 700; font-size: 1.35rem; line-height: 1.1; white-space: nowrap; }
+  .jersey span { font-size: .8rem; color: var(--chalk); font-weight: 500; }
+  .jersey.on { border-color: var(--ball); background: var(--paint-2); }
+  .jersey.edit { min-width: 0; border: 2px dashed var(--rule); background: transparent; color: var(--chalk); display: flex; align-items: center; font-size: .9rem; }
 
-  /* Shot buttons */
-  .shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .shot {
-    border-radius: 12px; padding: 14px; background: var(--card-2);
-    border: 1px solid var(--border);
-  }
-  .shot-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  h2 { font-family: var(--display); font-weight: 700; font-size: 1.45rem; margin: 22px 0 8px; letter-spacing: .01em; }
+  h2:first-child { margin-top: 0; }
+  .hint { color: var(--chalk); font-size: .9rem; margin: -4px 0 12px; }
+
+  /* training plan rows */
+  .panel { background: var(--paint); border-radius: 16px; padding: 4px 14px; }
+  .drill { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+  .drill:last-child { border-bottom: none; }
+  .drill-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .drill-name { font-weight: 600; font-size: 1.05rem; }
+  .drill-name small { display: block; font-weight: 400; color: var(--chalk); font-size: .82rem; }
+  .drill-val { display: flex; align-items: baseline; gap: 6px; color: var(--chalk); font-size: .9rem; white-space: nowrap; }
+  .drill-val input, .stepper input { width: 64px; text-align: right; background: var(--ink); border: 1px solid var(--rule); border-radius: 8px; padding: 4px 8px; font-family: var(--display); font-weight: 700; font-size: 1.5rem; line-height: 1.1; }
+  .bar { height: 8px; background: var(--ink); border-radius: 4px; overflow: hidden; margin: 10px 0; }
+  .bar i { display: block; height: 100%; background: var(--ball); border-radius: 4px; transition: width .25s ease; }
+  .done .bar i { background: var(--make); }
+  .week { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; font-size: .85rem; color: var(--chalk); }
+  .dots { display: flex; gap: 4px; }
+  .dot { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--rule); display: grid; place-items: center; font-size: .68rem; font-weight: 600; color: var(--chalk); }
+  .dot.part { border-color: var(--ball); color: var(--line); }
+  .dot.hit { background: var(--ball); border-color: var(--ball); color: #1a0d03; }
+  .dot.future { opacity: .45; }
+  .dot.today { box-shadow: 0 0 0 2px var(--paint), 0 0 0 3.5px var(--line); }
+  .week .ok { color: var(--make); font-weight: 600; }
+  .quick { display: flex; gap: 8px; margin-top: 10px; }
+  .quick button { flex: 1; padding: 11px 4px; }
+  .stepper { display: flex; align-items: center; gap: 6px; }
+  .stepper button { width: 44px; height: 44px; padding: 0; font-size: 1.3rem; }
+  .stepper input { width: 62px; text-align: center; padding: 6px 4px; }
+  .badge { display: inline-block; margin-top: 8px; background: var(--make); color: #05301e; font-weight: 600; font-size: .8rem; padding: 3px 10px; border-radius: 999px; }
+  .tick { color: var(--make); font-weight: 600; }
+
+  /* shooting */
+  .shot { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+  .shot:last-child { border-bottom: none; }
   .shot-name { font-weight: 600; font-size: 1.05rem; }
-  .shot-pts { font-size: .8rem; color: var(--muted); }
-  .shot-stat { font-size: .9rem; color: var(--muted); margin-bottom: 10px; }
-  .shot-stat strong { color: var(--text); }
-  .shot-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .make { background: rgba(47,191,113,.15); border-color: rgba(47,191,113,.5); color: var(--green); font-weight: 700; font-size: 1rem; padding: 14px; }
-  .make:hover { background: rgba(47,191,113,.25); }
-  .miss { background: rgba(229,72,77,.12); border-color: rgba(229,72,77,.45); color: var(--red); font-weight: 700; font-size: 1rem; padding: 14px; }
-  .miss:hover { background: rgba(229,72,77,.22); }
+  .shot-stat { color: var(--chalk); font-size: .9rem; }
+  .shot-stat .num { color: var(--line); font-size: 1.5rem; margin-right: 6px; }
+  .shot-btns { display: flex; gap: 8px; grid-row: span 2; }
+  .shot-btns button { width: 78px; height: 58px; font-size: 1rem; }
+  .mk { background: rgba(61,220,151,.16); border-color: var(--make); color: var(--make); }
+  .ms { background: rgba(255,123,123,.12); border-color: var(--miss); color: var(--miss); }
+  .fix { grid-column: 1 / -1; font-size: .82rem; color: var(--chalk); }
+  .fix button { font-size: .82rem; padding: 4px 10px; margin-left: 4px; font-weight: 500; }
 
-  /* Stats table */
-  table { width: 100%; border-collapse: collapse; font-size: .95rem; }
-  th, td { padding: 10px 6px; text-align: right; border-bottom: 1px solid var(--border); }
-  th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
-  th:first-child, td:first-child { text-align: left; }
-  tr.current td { color: var(--orange); }
-  .bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 4px; min-width: 60px; }
-  .bar > div { height: 100%; background: var(--orange); }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  .scroll { overflow-x: auto; }
+  th, td { padding: 9px 6px; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  th { color: var(--chalk); font-weight: 500; font-size: .8rem; }
+  th:first-child, td:first-child { text-align: left; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
 
-  .empty { color: var(--muted); text-align: center; padding: 20px; }
-  .log { max-height: 220px; overflow-y: auto; font-size: .9rem; }
-  .log div { padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 8px; }
-  .tag-make { color: var(--green); font-weight: 600; }
-  .tag-miss { color: var(--red); font-weight: 600; }
-  .muted { color: var(--muted); }
+  /* progress */
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  select { background: var(--paint-2); border: 1px solid var(--rule); border-radius: 10px; padding: 10px; flex: 1; min-width: 150px; font-weight: 600; }
+  .seg { display: flex; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  .seg button { border: none; border-radius: 0; background: var(--paint-2); color: var(--chalk); padding: 10px 12px; }
+  .seg button.on { background: var(--line); color: var(--ink); }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+  .tile { background: var(--paint); padding: 10px 12px; }
+  .tile .k { font-size: .8rem; color: var(--chalk); }
+  .tile .v { font-family: var(--display); font-weight: 700; font-size: 2rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tile .s { font-size: .8rem; color: var(--chalk); }
+  .up { color: var(--make); } .down { color: var(--miss); }
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; touch-action: pan-y; }
+  .chart text { fill: var(--chalk); font-size: 11px; font-family: var(--body); }
+  .tip { position: absolute; top: 0; transform: translateX(-50%); background: var(--ink); border: 1px solid var(--rule); border-radius: 8px; padding: 6px 10px; font-size: .8rem; white-space: nowrap; pointer-events: none; display: none; color: var(--chalk); }
+  .tip strong { display: block; font-size: .95rem; color: var(--line); }
+  details { margin: 6px 0 10px; }
+  summary { color: var(--chalk); font-size: .88rem; cursor: pointer; padding: 6px 0; }
+  .wkrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+  .wkrow:last-child { border-bottom: none; }
+  .wkrow .n { font-weight: 600; white-space: nowrap; font-size: .95rem; }
+  .wkrow .dot, .week .dot { width: 22px; height: 22px; }
+  .wkrow .dots, .week .dots { gap: 3px; }
+  .week > span { white-space: nowrap; }
+  .wkrow .c { font-size: .85rem; color: var(--chalk); text-align: right; min-width: 46px; white-space: nowrap; }
 
-  .toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: var(--card-2); border: 1px solid var(--border); padding: 10px 16px;
-    border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; font-size: .9rem;
-  }
+  /* goals + players */
+  .goal { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+  .goal:last-child { border-bottom: none; }
+  .goal-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; color: var(--chalk); font-size: .92rem; }
+  .field { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .field input[type=text] { flex: 1; min-width: 0; background: var(--ink); border: 1.5px solid var(--rule); border-radius: 10px; padding: 12px; font-size: 1.1rem; font-weight: 600; }
+  .field input[type=text]:focus { border-color: var(--ball); outline: none; }
+  .stack { display: grid; gap: 8px; margin-top: 12px; }
+  textarea { width: 100%; min-height: 76px; background: var(--ink); border: 1px solid var(--rule); border-radius: 10px; padding: 10px; font-size: .85rem; }
+  .empty { color: var(--chalk); padding: 18px 0; }
+
+  /* welcome */
+  .welcome { padding-top: 8vh; }
+  .welcome h1 { font-family: var(--display); font-weight: 700; font-size: 3.2rem; line-height: .95; margin: 0 0 10px; }
+  .welcome p { color: var(--chalk); margin: 0 0 20px; max-width: 34ch; }
+  .welcome .primary { width: 100%; padding: 15px; font-size: 1.05rem; margin-top: 8px; }
+
+  /* bottom nav */
+  .nav { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(16,32,58,.96); border-top: 1px solid var(--rule); display: none; justify-content: center; padding-bottom: env(safe-area-inset-bottom); z-index: 4; }
+  .nav.show { display: flex; }
+  .nav button { flex: 1; max-width: 160px; border: none; background: transparent; border-radius: 0; color: var(--chalk); padding: 10px 2px 12px; font-size: .78rem; font-weight: 600; display: grid; justify-items: center; gap: 3px; }
+  .nav svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .nav button.on { color: var(--ball); }
+  .undo { position: fixed; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 3; background: var(--ink); border-color: var(--rule); border-radius: 999px; padding: 9px 16px; display: none; }
+  .undo.show { display: block; }
+
+  .toast { position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: var(--line); color: var(--ink); font-weight: 600; padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; font-size: .92rem; z-index: 6; max-width: 90vw; text-align: center; }
   .toast.show { opacity: 1; }
-
-  @media (max-width: 600px) {
-    .players { grid-template-columns: 1fr; }
-    .shots { grid-template-columns: 1fr; }
-    th, td { padding: 8px 4px; font-size: .85rem; }
-  }
+  .modal { position: fixed; inset: 0; background: rgba(5,12,24,.7); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+  .modal.show { display: flex; }
+  .modal .box { background: var(--paint); border: 1px solid var(--rule); border-radius: 16px; padding: 18px; max-width: 340px; width: 100%; }
+  .modal p { margin: 0 0 16px; }
+  .modal .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } button:active { transform: none; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>🏀 Shot <span>Tracker</span></h1>
-    <div class="toolbar">
-      <button id="undoBtn">↶ Undo</button>
-      <button id="copyBtn">Copy summary</button>
-      <button id="resetBtn" class="btn-danger">Reset all</button>
-    </div>
-  </header>
-
-  <div class="card">
-    <h2>Select shooter</h2>
-    <div class="players" id="players"></div>
-  </div>
-
-  <div class="card">
-    <h2 id="currentLabel">Log shots</h2>
-    <div class="shots" id="shots"></div>
-  </div>
-
-  <div class="card">
-    <h2>Scoreboard</h2>
-    <div id="stats"></div>
-  </div>
-
-  <div class="card">
-    <h2>Recent shots</h2>
-    <div class="log" id="log"></div>
-  </div>
-</div>
-<div class="toast" id="toast"></div>
+<div class="wrap"><main id="app"></main></div>
+<button class="undo" id="undoBtn">Undo</button>
+<nav class="nav" id="nav" aria-label="Sections"></nav>
+<div class="toast" id="toast" role="status"></div>
+<div class="modal" id="modal"><div class="box">
+  <p id="modalMsg"></p>
+  <div class="two"><button id="modalNo">Cancel</button><button id="modalYes" class="danger">Yes</button></div>
+</div></div>
 
 <script>
-  const STORAGE_KEY = "shotTracker.v1";
-  const SHOT_TYPES = [
-    { id: "mid",   name: "Mid-range",    points: 2 },
-    { id: "three", name: "3-Pointer",    points: 3 },
-    { id: "ft",    name: "Free Throw",   points: 1 },
+(function () {
+  "use strict";
+  var KEY = "hoopsTracker.v3", V2 = "hoopsTracker.v2", MAX_PLAYERS = 10;
+
+  var SHOTS = [
+    { id: "mid",   name: "Mid-range",  points: 2 },
+    { id: "three", name: "3-pointer",  points: 3 },
+    { id: "ft",    name: "Free throw", points: 1 }
   ];
+  var DRILLS = [
+    { id: "ball",    name: "Ball handling", short: "Ball",  unit: "min",  mode: "total", def: { target: 30, days: 5 }, steps: [5, 10], gstep: 5 },
+    { id: "rope",    name: "Jump rope",     short: "Rope",  unit: "min",  mode: "total", def: { target: 10, days: 5 }, steps: [1, 5],  gstep: 1 },
+    { id: "squats",  name: "Squats",        short: "Squat", unit: "reps", mode: "total", def: { target: 60, days: 4 }, steps: [10, 20], gstep: 5 },
+    { id: "pushups", name: "Push-ups",      short: "Push",  unit: "reps", mode: "max",   def: { target: 0,  days: 5 }, gstep: 1 },
+    { id: "pullups", name: "Pull-ups",      short: "Pull",  unit: "reps", mode: "max",   def: { target: 0,  days: 5 }, gstep: 1 }
+  ];
+  function drillById(id) { return DRILLS.find(function (d) { return d.id === id; }); }
+  var METRICS = DRILLS.map(function (d) {
+    return { id: d.id, label: d.mode === "max" ? "Max " + d.name.toLowerCase() : d.name, kind: d.mode === "max" ? "max" : "count", unit: d.unit, drill: d.id };
+  }).concat([
+    { id: "fg",    label: "Field goal %",  kind: "pct", shots: ["mid", "three"] },
+    { id: "mid",   label: "Mid-range %",   kind: "pct", shots: ["mid"] },
+    { id: "three", label: "3-pointer %",   kind: "pct", shots: ["three"] },
+    { id: "ft",    label: "Free throw %",  kind: "pct", shots: ["ft"] },
+    { id: "made",  label: "Shots made",    kind: "count", unit: "made" }
+  ]);
+  var RANGES = [{ id: "7", label: "7D", n: 7 }, { id: "30", label: "30D", n: 30 }, { id: "90", label: "90D", n: 90 }, { id: "all", label: "All", n: 0 }];
+  var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], DLET = ["M","T","W","T","F","S","S"];
 
-  const defaultState = () => ({
-    players: [
-      { name: "Boy 1", shots: [] },
-      { name: "Boy 2", shots: [] },
-      { name: "Boy 3", shots: [] },
-    ],
-    activePlayer: 0,
-    history: [],   // [{playerIndex, shot, made, ts}] for undo
-  });
+  /* ---------- dates ---------- */
+  function keyOf(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function fromKey(k) { var p = k.split("-"); return new Date(+p[0], +p[1] - 1, +p[2], 12); }
+  function addDays(d, n) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); x.setDate(x.getDate() + n); return x; }
+  function today() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate(), 12); }
+  function md(d) { return MONTHS[d.getMonth()] + " " + d.getDate(); }
+  function daysBetween(a, b) { return Math.round((b - a) / 864e5); }
+  function weekStart(d) { return addDays(d, -((d.getDay() + 6) % 7)); }
 
-  let state = load();
-
+  /* ---------- state ---------- */
+  function newId() { return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function blank() {
+    return { players: [1, 2, 3].map(function (n) { return { id: "p" + n, name: "" }; }),
+             days: {}, goals: {}, setup: false, ui: { tab: "today", active: "p1", metric: "ball", range: "30" } };
+  }
+  function valid(s) { return s && Array.isArray(s.players) && s.days && typeof s.days === "object"; }
   function load() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const s = JSON.parse(raw);
-        if (s && Array.isArray(s.players)) return { ...defaultState(), ...s };
+      var raw = localStorage.getItem(KEY);
+      if (raw) { var s = JSON.parse(raw); if (valid(s)) { s.ui = Object.assign(blank().ui, s.ui || {}); s.goals = s.goals || {}; return s; } }
+      var old = localStorage.getItem(V2);
+      if (old) {
+        var o = JSON.parse(old);
+        if (valid(o)) {
+          var n = blank(); n.players = o.players; n.days = o.days;
+          Object.keys(n.days).forEach(function (k) { Object.keys(n.days[k]).forEach(function (p) { if (n.days[k][p].d) n.days[k][p].d.rope = 0; }); });
+          n.setup = !o.players.every(function (p) { return /^Boy \d+$/.test(p.name); });
+          if (!n.setup) n.players.forEach(function (p) { p.name = ""; });
+          return n;
+        }
       }
-    } catch (e) { /* storage unavailable: fall through */ }
-    return defaultState();
+    } catch (e) {}
+    return blank();
   }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
 
-  function save() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  function emptyEntry() { return { s: { mid: [0, 0], three: [0, 0], ft: [0, 0] }, d: { ball: 0, rope: 0, squats: 0, pushups: 0, pullups: 0 } }; }
+  function entry(dateKey, pid, create) {
+    var day = state.days[dateKey];
+    if (!day) { if (!create) return null; day = state.days[dateKey] = {}; }
+    var e = day[pid];
+    if (!e) { if (!create) return null; e = day[pid] = emptyEntry(); }
+    var base = emptyEntry();
+    e.s = Object.assign(base.s, e.s || {}); e.d = Object.assign(base.d, e.d || {});
+    return e;
   }
-
-  function toast(msg) {
-    const t = document.getElementById("toast");
-    t.textContent = msg;
-    t.classList.add("show");
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => t.classList.remove("show"), 1400);
+  function isActive(e) {
+    if (!e) return false;
+    return SHOTS.some(function (t) { return e.s[t.id][1] > 0; }) || DRILLS.some(function (d) { return e.d[d.id] > 0; });
   }
-
-  function pct(made, att) { return att === 0 ? "—" : Math.round((made / att) * 100) + "%"; }
-  function pctNum(made, att) { return att === 0 ? 0 : Math.round((made / att) * 100); }
-
-  function statsFor(player) {
-    const out = {};
-    let fgMade = 0, fgAtt = 0, points = 0;
-    for (const st of SHOT_TYPES) {
-      const shots = player.shots.filter(s => s.shot === st.id);
-      const made = shots.filter(s => s.made).length;
-      out[st.id] = { made, att: shots.length };
-      if (st.id !== "ft") { fgMade += made; fgAtt += shots.length; }
-      points += made * st.points;
+  function val(pid, dateKey, drillId) { var e = entry(dateKey, pid, false); return e ? e.d[drillId] || 0 : 0; }
+  function goal(pid, drillId) { var g = state.goals[pid] && state.goals[pid][drillId]; return g || drillById(drillId).def; }
+  function isHit(v, g, d) { return d.mode === "max" ? v > 0 && v >= g.target : (g.target > 0 ? v >= g.target : v > 0); }
+  function weekInfo(pid, d, ref) {
+    var start = weekStart(ref), t = today(), g = goal(pid, d.id), out = { days: [], hits: 0 };
+    for (var i = 0; i < 7; i++) {
+      var day = addDays(start, i), st;
+      if (day > t) st = "future";
+      else { var v = val(pid, keyOf(day), d.id); st = isHit(v, g, d) ? "hit" : v > 0 ? "part" : "none"; if (st === "hit") out.hits++; }
+      out.days.push({ st: st, today: keyOf(day) === keyOf(ref) });
     }
-    return { byShot: out, made: fgMade, att: fgAtt, points, three: { made: out.three.made, att: out.three.att } };
+    return out;
+  }
+  function dayScore(pid, dateKey) {
+    var hit = 0, total = 0;
+    DRILLS.forEach(function (d) { var g = goal(pid, d.id); if (g.days > 0) { total++; if (isHit(val(pid, dateKey, d.id), g, d)) hit++; } });
+    return { hit: hit, total: total };
+  }
+  function best(pid, drillId, exceptKey) {
+    var b = { v: 0, date: null };
+    Object.keys(state.days).forEach(function (k) { if (k === exceptKey) return; var v = val(pid, k, drillId); if (v > b.v) b = { v: v, date: fromKey(k) }; });
+    return b;
   }
 
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  }
+  var state = load();
+  var viewDate = today();
+  var undoStack = [];
+  if (!state.players.some(function (p) { return p.id === state.ui.active; })) state.ui.active = state.players[0] ? state.players[0].id : null;
 
-  function renderPlayers() {
-    const el = document.getElementById("players");
-    el.innerHTML = "";
-    state.players.forEach((p, i) => {
-      const s = statsFor(p);
-      const card = document.createElement("div");
-      card.className = "player" + (i === state.activePlayer ? " active" : "");
-      card.innerHTML = `
-        <input value="${esc(p.name)}" placeholder="Type name" maxlength="20" aria-label="Player ${i+1} name">
-        <div class="mini">${s.made}/${s.att} made · ${pct(s.made, s.att)}</div>
-        <div class="pts">${s.points} pts</div>`;
-      card.addEventListener("click", () => { state.activePlayer = i; save(); render(); });
-      card.querySelector("input").addEventListener("input", (e) => {
-        p.name = e.target.value || `Player ${i+1}`;
-        save();
-        renderStats(); renderLog();
-      });
-      el.appendChild(card);
-    });
-  }
+  /* ---------- helpers ---------- */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function pct(m, a) { return a ? Math.round(m / a * 100) + "%" : "–"; }
+  function player() { return state.players.find(function (p) { return p.id === state.ui.active; }) || null; }
+  function toast(msg) { var t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove("show"); }, 1800); }
+  var modalCb = null;
+  function ask(msg, yes, cb) { $("modalMsg").textContent = msg; $("modalYes").textContent = yes; modalCb = cb; $("modal").classList.add("show"); }
+  $("modalNo").onclick = function () { $("modal").classList.remove("show"); modalCb = null; };
+  $("modalYes").onclick = function () { $("modal").classList.remove("show"); var cb = modalCb; modalCb = null; if (cb) cb(); };
 
-  function renderShots() {
-    const p = state.players[state.activePlayer];
-    document.getElementById("currentLabel").textContent = `Log shots — ${p.name}`;
-    const s = statsFor(p);
-    const el = document.getElementById("shots");
-    el.innerHTML = "";
-    for (const st of SHOT_TYPES) {
-      const b = s.byShot[st.id];
-      const box = document.createElement("div");
-      box.className = "shot";
-      box.innerHTML = `
-        <div class="shot-head">
-          <span class="shot-name">${st.name}</span>
-          <span class="shot-pts">${st.points} pt${st.points > 1 ? "s" : ""}</span>
-        </div>
-        <div class="shot-stat"><strong>${b.made}</strong> of ${b.att} · ${pct(b.made, b.att)}</div>
-        <div class="shot-actions">
-          <button class="make" data-shot="${st.id}" data-made="1">✓ Make</button>
-          <button class="miss" data-shot="${st.id}" data-made="0">✗ Miss</button>
-        </div>`;
-      el.appendChild(box);
+  function mutate(dateKey, pid, fn) {
+    var before = entry(dateKey, pid, false);
+    undoStack.push({ date: dateKey, pid: pid, prev: before ? JSON.parse(JSON.stringify(before)) : null });
+    if (undoStack.length > 200) undoStack.shift();
+    fn(entry(dateKey, pid, true));
+    save(); render();
+  }
+  function setDrill(p, d, newVal) {
+    var k = keyOf(viewDate), g = goal(p.id, d.id), old = val(p.id, k, d.id);
+    var prevBest = best(p.id, d.id, k).v;
+    newVal = Math.max(0, Math.min(9999, Math.round(newVal)));
+    if (newVal === old) return;
+    mutate(k, p.id, function (e) { e.d[d.id] = newVal; });
+    if (d.mode === "max" && newVal > prevBest && prevBest > 0 && old <= prevBest) toast("New personal best for " + p.name + ": " + newVal + " " + d.name.toLowerCase());
+    else if (g.days > 0 && !isHit(old, g, d) && isHit(newVal, g, d)) {
+      var sc = dayScore(p.id, k);
+      toast(sc.hit === sc.total ? p.name + " finished everything for the day" : d.name + " done for the day");
     }
-    el.querySelectorAll("button[data-shot]").forEach(btn => {
-      btn.addEventListener("click", () => recordShot(btn.dataset.shot, btn.dataset.made === "1"));
-    });
   }
-
-  function recordShot(shotId, made) {
-    const p = state.players[state.activePlayer];
-    const entry = { shot: shotId, made, ts: Date.now() };
-    p.shots.push(entry);
-    state.history.push({ playerIndex: state.activePlayer, ...entry });
-    save();
-    render();
-    const st = SHOT_TYPES.find(x => x.id === shotId);
-    toast(`${p.name}: ${made ? "Made" : "Missed"} ${st.name}`);
-  }
-
   function undo() {
-    const last = state.history.pop();
-    if (!last) { toast("Nothing to undo"); return; }
-    const p = state.players[last.playerIndex];
-    if (p) {
-      const idx = p.shots.map(s => s.ts).lastIndexOf(last.ts);
-      if (idx > -1) p.shots.splice(idx, 1);
+    var u = undoStack.pop();
+    if (!u) return;
+    if (!state.days[u.date]) state.days[u.date] = {};
+    if (u.prev) state.days[u.date][u.pid] = u.prev; else delete state.days[u.date][u.pid];
+    save(); render(); toast("Undone");
+  }
+
+  /* ---------- aggregation ---------- */
+  function measure(e, m) {
+    if (!e) return { made: 0, att: 0, sum: 0 };
+    if (m.kind === "pct") {
+      var made = 0, att = 0;
+      m.shots.forEach(function (id) { made += e.s[id][0]; att += e.s[id][1]; });
+      return { made: made, att: att, sum: 0 };
     }
-    save();
-    render();
-    toast("Last shot removed");
+    if (m.drill) return { made: 0, att: 0, sum: e.d[m.drill] || 0 };
+    var t = 0; SHOTS.forEach(function (s) { t += e.s[s.id][0]; });
+    return { made: 0, att: 0, sum: t };
   }
-
-  function renderStats() {
-    const rows = state.players.map((p, i) => ({ p, i, s: statsFor(p) }));
-    const sorted = [...rows].sort((a, b) => b.s.points - a.s.points || pctNum(b.s.made, b.s.att) - pctNum(a.s.made, a.s.att));
-    const anyShots = rows.some(r => r.s.byShot.mid.att + r.s.byShot.three.att + r.s.byShot.ft.att > 0);
-    if (!anyShots) {
-      document.getElementById("stats").innerHTML = `<div class="empty">No shots yet. Pick a shooter and start logging!</div>`;
-      return;
+  function agg(pid, m, start, end) {
+    var out = { made: 0, att: 0, sum: 0, days: 0, best: null };
+    for (var d = start; d <= end; d = addDays(d, 1)) {
+      var v = measure(entry(keyOf(d), pid, false), m);
+      out.made += v.made; out.att += v.att;
+      out.sum = m.kind === "max" ? Math.max(out.sum, v.sum) : out.sum + v.sum;
+      var has = m.kind === "pct" ? v.att > 0 : v.sum > 0;
+      if (has) {
+        out.days++;
+        var x = m.kind === "pct" ? v.made / v.att : v.sum;
+        if (!out.best || x > out.best.val) out.best = { val: x, date: d, made: v.made, att: v.att };
+      }
     }
-    const head = `<tr>
-      <th>Player</th><th>FG</th><th>FG%</th><th>3PT</th><th>FT</th><th>PTS</th></tr>`;
-    const body = sorted.map(({ p, i, s }) => `
-      <tr class="${i === state.activePlayer ? "current" : ""}">
-        <td>${esc(p.name)}</td>
-        <td>${s.made}/${s.att}</td>
-        <td>
-          ${pct(s.made, s.att)}
-          <div class="bar"><div style="width:${pctNum(s.made, s.att)}%"></div></div>
-        </td>
-        <td>${s.three.made}/${s.three.att}</td>
-        <td>${s.byShot.ft.made}/${s.byShot.ft.att}</td>
-        <td><strong>${s.points}</strong></td>
-      </tr>`).join("");
-    document.getElementById("stats").innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+    out.has = m.kind === "pct" ? out.att > 0 : out.sum > 0;
+    out.value = m.kind === "pct" ? (out.att ? out.made / out.att * 100 : 0) : out.sum;
+    return out;
+  }
+  function firstDate(pid) {
+    var keys = Object.keys(state.days).filter(function (k) { return isActive(entry(k, pid, false)); }).sort();
+    return keys.length ? fromKey(keys[0]) : null;
+  }
+  function streak(pid) {
+    var d = today(), n = 0;
+    if (!isActive(entry(keyOf(d), pid, false))) d = addDays(d, -1);
+    while (isActive(entry(keyOf(d), pid, false))) { n++; d = addDays(d, -1); }
+    return n;
+  }
+  function buckets(pid, m, nDays) {
+    var end = today(), start = addDays(end, -(nDays - 1)), out = [];
+    if (nDays <= 31) {
+      for (var d = start; d <= end; d = addDays(d, 1)) { var a = agg(pid, m, d, d); a.start = d; a.end = d; a.label = md(d); a.long = DOW[d.getDay()] + ", " + md(d); out.push(a); }
+    } else {
+      for (var e = end; e >= start; e = addDays(e, -7)) {
+        var s = addDays(e, -6); if (s < start) s = start;
+        var b = agg(pid, m, s, e); b.start = s; b.end = e; b.label = md(e); b.long = md(s) + " to " + md(e); out.unshift(b);
+      }
+    }
+    return out;
   }
 
-  function renderLog() {
-    const el = document.getElementById("log");
-    const all = [];
-    state.players.forEach((p) => p.shots.forEach(s => all.push({ name: p.name, ...s })));
-    all.sort((a, b) => b.ts - a.ts);
-    if (!all.length) { el.innerHTML = `<div class="empty">Shots you log will appear here.</div>`; return; }
-    el.innerHTML = all.slice(0, 40).map(s => {
-      const st = SHOT_TYPES.find(x => x.id === s.shot);
-      const time = new Date(s.ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-      return `<div>
-        <span><strong>${esc(s.name)}</strong> · ${st.name}</span>
-        <span><span class="${s.made ? "tag-make" : "tag-miss"}">${s.made ? "MADE" : "MISS"}</span>
-        <span class="muted"> ${time}</span></span>
-      </div>`;
-    }).join("");
+  /* ---------- shared pieces ---------- */
+  function jerseys(withScore) {
+    var k = keyOf(viewDate);
+    return '<div class="jerseys">' + state.players.map(function (p) {
+      var sc = dayScore(p.id, k), sub = withScore ? (sc.total ? sc.hit + " of " + sc.total + " done" : "No goals set") : streak(p.id) + " day streak";
+      return '<button class="jersey' + (p.id === state.ui.active ? " on" : "") + '" data-act="pick" data-id="' + p.id + '"><b>' + esc(p.name) + "</b><span>" + sub + "</span></button>";
+    }).join("") + '<button class="jersey edit" data-act="go" data-tab="players">Edit names</button></div>';
+  }
+  function dots(info) {
+    return '<div class="dots" aria-hidden="true">' + info.days.map(function (x, i) {
+      return '<span class="dot ' + x.st + (x.today ? " today" : "") + '">' + DLET[i] + "</span>";
+    }).join("") + "</div>";
+  }
+  function weekText(info, g) {
+    if (!g.days) return "No weekly goal";
+    if (info.hits >= g.days) return '<span class="ok">✓ ' + info.hits + " of " + g.days + ", week done</span>";
+    return info.hits + " of " + g.days + " this week";
   }
 
-  function summaryText() {
-    const lines = ["Shot Tracker Summary", ""];
-    state.players.forEach(p => {
-      const s = statsFor(p);
-      lines.push(`${p.name}: ${s.made}/${s.att} FG (${pct(s.made, s.att)}), 3PT ${s.three.made}/${s.three.att}, FT ${s.byShot.ft.made}/${s.byShot.ft.att}, ${s.points} pts`);
+  /* ---------- welcome ---------- */
+  function viewWelcome() {
+    var h = '<div class="welcome"><h1>Who\'s training?</h1><p>Type each boy\'s name. You can change names or add another player later under Players.</p>';
+    state.players.forEach(function (p, i) {
+      h += '<div class="field"><input type="text" maxlength="16" value="' + esc(p.name) + '" data-name="' + p.id + '" placeholder="Player ' + (i + 1) + ' name" aria-label="Player ' + (i + 1) + ' name" autocomplete="off"></div>';
     });
-    return lines.join("\n");
+    if (state.players.length < MAX_PLAYERS) h += '<button class="quiet" data-act="addBlank">+ Add another player</button>';
+    return h + '<button class="primary" data-act="start">Start tracking</button></div>';
   }
 
+  /* ---------- today ---------- */
+  function viewToday() {
+    var p = player();
+    var k = keyOf(viewDate), t = today(), diff = daysBetween(viewDate, t);
+    var title = diff === 0 ? "Today" : diff === 1 ? "Yesterday" : DOW[viewDate.getDay()] + ", " + md(viewDate);
+    var sub = diff <= 1 ? DOW[viewDate.getDay()] + ", " + md(viewDate) : diff + " days ago";
+    var h = '<div class="top"><div><h1>' + title + "</h1><p>" + sub + '</p></div><div class="daynav">' +
+      '<button data-act="day" data-n="-1" aria-label="Previous day">‹</button>' +
+      '<button data-act="day" data-n="1" aria-label="Next day"' + (diff === 0 ? " disabled" : "") + ">›</button></div></div>";
+    if (!p) return h + '<p class="empty">No players yet.</p><button class="primary" data-act="go" data-tab="players">Add a player</button>';
+    h += jerseys(true);
+    var e = entry(k, p.id, false) || emptyEntry();
+
+    h += "<h2>" + esc(p.name) + "'s training</h2><div class=\"panel\">";
+    DRILLS.forEach(function (d) {
+      var g = goal(p.id, d.id), v = e.d[d.id] || 0, hit = isHit(v, g, d), info = weekInfo(p.id, d, viewDate);
+      h += '<div class="drill' + (hit ? " done" : "") + '">';
+      if (d.mode === "total") {
+        h += '<div class="drill-top"><div class="drill-name">' + d.name + (hit ? ' <span class="tick">✓</span>' : "") + "</div>" +
+          '<div class="drill-val"><input type="number" inputmode="numeric" min="0" value="' + v + '" data-drill="' + d.id + '" aria-label="' + d.name + " " + d.unit + '">' +
+          "<span>" + (g.target ? "of " + g.target + " " : "") + d.unit + "</span></div></div>" +
+          '<div class="bar"><i style="width:' + (g.target ? Math.min(100, v / g.target * 100) : (v ? 100 : 0)) + '%"></i></div>' +
+          '<div class="quick">' + d.steps.map(function (n) { return '<button data-act="add" data-drill="' + d.id + '" data-n="' + n + '">+' + n + "</button>"; }).join("") +
+          (g.target ? '<button data-act="full" data-drill="' + d.id + '"' + (hit ? " disabled" : "") + ">Finish " + g.target + "</button>" : "") + "</div>";
+      } else {
+        var pb = best(p.id, d.id, k).v, isPb = v > pb && pb > 0;
+        h += '<div class="drill-top"><div class="drill-name">Max ' + d.name.toLowerCase() + (hit ? ' <span class="tick">✓</span>' : "") +
+          "<small>" + (g.target ? "Goal " + g.target + " in one set. " : "One all-out set. ") + (Math.max(pb, v) ? "Best ever " + Math.max(pb, v) : "No best yet") + "</small></div>" +
+          '<div class="stepper"><button data-act="add" data-drill="' + d.id + '" data-n="-1" aria-label="One fewer"' + (v ? "" : " disabled") + ">−</button>" +
+          '<input type="number" inputmode="numeric" min="0" value="' + v + '" data-drill="' + d.id + '" aria-label="Max ' + d.name + '">' +
+          '<button data-act="add" data-drill="' + d.id + '" data-n="1" aria-label="One more">+</button></div></div>' +
+          (isPb ? '<span class="badge">New personal best</span>' : "");
+      }
+      h += '<div class="week">' + dots(info) + "<span>" + weekText(info, g) + "</span></div></div>";
+    });
+    h += "</div>";
+
+    h += "<h2>Shooting</h2><div class=\"panel\">";
+    SHOTS.forEach(function (s) {
+      var m = e.s[s.id][0], a = e.s[s.id][1];
+      h += '<div class="shot"><div class="shot-name">' + s.name + "</div>" +
+        '<div class="shot-btns"><button class="mk" data-act="shot" data-shot="' + s.id + '" data-made="1">Make</button>' +
+        '<button class="ms" data-act="shot" data-shot="' + s.id + '" data-made="0">Miss</button></div>' +
+        '<div class="shot-stat"><span class="num">' + m + "/" + a + "</span>" + (a ? pct(m, a) : "No shots yet") + "</div>" +
+        (a ? '<div class="fix">Take one back:<button class="quiet" data-act="unshot" data-shot="' + s.id + '" data-made="1"' + (m ? "" : " disabled") + ">make</button>" +
+        '<button class="quiet" data-act="unshot" data-shot="' + s.id + '" data-made="0"' + (a > m ? "" : " disabled") + ">miss</button></div>" : "") + "</div>";
+    });
+    h += "</div>";
+
+    if (state.players.length > 1) {
+      h += "<h2>Everyone, " + title.toLowerCase() + '</h2><div class="panel"><div class="scroll"><table><thead><tr><th>Player</th><th>Goals</th>' +
+        DRILLS.map(function (d) { return "<th>" + d.short + "</th>"; }).join("") + "<th>FG</th><th>FT</th></tr></thead><tbody>";
+      state.players.forEach(function (pl) {
+        var x = entry(k, pl.id, false) || emptyEntry(), sc = dayScore(pl.id, k);
+        h += "<tr><td>" + esc(pl.name) + "</td><td>" + sc.hit + "/" + sc.total + "</td>" + DRILLS.map(function (d) { return "<td>" + (x.d[d.id] || 0) + "</td>"; }).join("") +
+          "<td>" + (x.s.mid[0] + x.s.three[0]) + "/" + (x.s.mid[1] + x.s.three[1]) + "</td><td>" + x.s.ft[0] + "/" + x.s.ft[1] + "</td></tr>";
+      });
+      h += "</tbody></table></div></div>";
+    }
+    return h;
+  }
+
+  /* ---------- progress ---------- */
+  function fmt(m, a) { return m.kind === "pct" ? Math.round(a.value) + "%" : a.sum.toLocaleString(); }
+  var chartData = null;
+  function viewProgress() {
+    var p = player();
+    var h = '<div class="top"><div><h1>Progress</h1><p>Week runs Monday to Sunday</p></div></div>';
+    if (!p) return h + '<p class="empty">No players yet.</p>';
+    h += jerseys(false);
+    var t = today();
+
+    h += "<h2>" + esc(p.name) + "'s week</h2><div class=\"panel\">";
+    DRILLS.forEach(function (d) {
+      var g = goal(p.id, d.id), info = weekInfo(p.id, d, t);
+      h += '<div class="wkrow"><span class="n">' + d.name + "</span>" + dots(info) + '<span class="c">' +
+        (g.days ? (info.hits >= g.days ? '<span class="up">✓ ' + info.hits + " of " + g.days + "</span>" : info.hits + " of " + g.days) : "No goal") + "</span></div>";
+    });
+    h += "</div>";
+
+    var m = METRICS.find(function (x) { return x.id === state.ui.metric; }) || METRICS[0];
+    var r = RANGES.find(function (x) { return x.id === state.ui.range; }) || RANGES[1];
+    var n = r.n;
+    if (!n) { var f = firstDate(p.id); n = Math.max(7, f ? daysBetween(f, t) + 1 : 7); }
+    var cur = agg(p.id, m, addDays(t, -(n - 1)), t);
+    var prev = r.n ? agg(p.id, m, addDays(t, -(2 * n - 1)), addDays(t, -n)) : null;
+    var bs = buckets(p.id, m, n), weekly = bs.length && bs[0].start < bs[0].end;
+    var d0 = m.drill ? drillById(m.drill) : null, g0 = d0 ? goal(p.id, d0.id) : null;
+    chartData = { buckets: bs, metric: m, goal: g0 && g0.target > 0 && (!weekly || m.kind === "max") ? g0.target : 0 };
+
+    h += '<h2>Trend</h2><div class="controls"><select id="metricSel" aria-label="What to chart">' +
+      METRICS.map(function (x) { return '<option value="' + x.id + '"' + (x.id === m.id ? " selected" : "") + ">" + x.label + "</option>"; }).join("") +
+      '</select><div class="seg">' + RANGES.map(function (x) { return '<button data-act="range" data-id="' + x.id + '"' + (x.id === r.id ? ' class="on"' : "") + ">" + x.label + "</button>"; }).join("") + "</div></div>";
+
+    var rangeName = r.n ? "last " + r.n + " days" : "all time";
+    var delta = '<div class="v">–</div><div class="s">' + (r.n ? "Nothing earlier to compare" : "Pick 7D, 30D or 90D") + "</div>";
+    if (prev && prev.has && cur.has) {
+      var dv = Math.round(cur.value) - Math.round(prev.value);
+      var cls = dv > 0 ? "up" : dv < 0 ? "down" : "";
+      delta = '<div class="v ' + cls + '">' + (dv > 0 ? "▲ " : dv < 0 ? "▼ " : "") + Math.abs(dv).toLocaleString() + (m.kind === "pct" ? " pts" : "") + '</div><div class="s">' + (dv > 0 ? "Up from " : dv < 0 ? "Down from " : "Same as ") + fmt(m, prev) + "</div>";
+    }
+    var t1k = (m.kind === "max" ? "Best, " : m.kind === "pct" ? "Shooting, " : "Total, ") + rangeName;
+    var t1s = m.kind === "pct" ? cur.made + " of " + cur.att + " made" : m.unit + " over " + cur.days + " day" + (cur.days === 1 ? "" : "s");
+    var t3k, t3v, t3s;
+    if (m.kind === "max") { var pb = best(p.id, m.drill, null); t3k = "Best ever"; t3v = pb.v || "–"; t3s = pb.date ? md(pb.date) : "Nothing logged"; }
+    else { t3k = "Best day"; t3v = cur.best ? (m.kind === "pct" ? Math.round(cur.best.val * 100) + "%" : cur.best.val.toLocaleString()) : "–"; t3s = cur.best ? md(cur.best.date) + (m.kind === "pct" ? ", " + cur.best.made + " of " + cur.best.att : "") : "Nothing logged"; }
+    var st = streak(p.id);
+    h += '<div class="tiles">' +
+      '<div class="tile"><div class="k">' + t1k + '</div><div class="v">' + (cur.has ? fmt(m, cur) : "–") + '</div><div class="s">' + t1s + "</div></div>" +
+      '<div class="tile"><div class="k">Against the ' + (r.n ? r.n + " days before" : "period before") + "</div>" + delta + "</div>" +
+      '<div class="tile"><div class="k">' + t3k + '</div><div class="v">' + t3v + '</div><div class="s">' + t3s + "</div></div>" +
+      '<div class="tile"><div class="k">Streak</div><div class="v">' + st + " day" + (st === 1 ? "" : "s") + '</div><div class="s">in a row with something logged</div></div></div>';
+
+    if (!cur.has) h += '<p class="empty">Nothing logged for ' + m.label.toLowerCase() + " in this range. Log a few days on Today and the trend appears here.</p>";
+    else {
+      h += '<div class="hint" style="margin:0 0 6px">' + m.label + (weekly ? ", by week" : ", by day") + (chartData.goal ? ". Dashed line is the goal." : "") + "</div>" +
+        '<div class="chart" id="chart"><div class="tip" id="tip"></div></div><details><summary>Show the numbers</summary><div class="scroll"><table><thead><tr><th>' + (weekly ? "Week" : "Day") + "</th><th>" + (m.kind === "pct" ? "Made" : m.unit) + "</th>" + (m.kind === "pct" ? "<th>%</th>" : "") + "</tr></thead><tbody>";
+      bs.slice().reverse().forEach(function (b) {
+        if (!b.has) return;
+        h += "<tr><td>" + b.long + "</td><td>" + (m.kind === "pct" ? b.made + "/" + b.att : b.sum.toLocaleString()) + "</td>" + (m.kind === "pct" ? "<td>" + Math.round(b.value) + "%</td>" : "") + "</tr>";
+      });
+      h += "</tbody></table></div></details>";
+    }
+
+    if (state.players.length > 1) {
+      var ws = weekStart(t), fgM = METRICS.find(function (x) { return x.id === "fg"; });
+      h += '<h2>Everyone this week</h2><div class="hint">Goal days hit out of the weekly goal</div><div class="panel"><div class="scroll"><table><thead><tr><th>Player</th>' +
+        DRILLS.map(function (d) { return "<th>" + d.short + "</th>"; }).join("") + "<th>FG%</th></tr></thead><tbody>";
+      state.players.forEach(function (pl) {
+        var a = agg(pl.id, fgM, ws, t);
+        h += "<tr><td>" + esc(pl.name) + "</td>" + DRILLS.map(function (d) { var g = goal(pl.id, d.id); return "<td>" + (g.days ? weekInfo(pl.id, d, t).hits + "/" + g.days : "–") + "</td>"; }).join("") +
+          "<td>" + (a.has ? fmt(fgM, a) : "–") + "</td></tr>";
+      });
+      h += "</tbody></table></div></div>";
+    }
+    return h;
+  }
+
+  function niceMax(v) {
+    if (v <= 4) return 4;
+    var p = Math.pow(10, Math.floor(Math.log10(v))), f = v / p;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 4 ? 4 : f <= 5 ? 5 : 10) * p;
+  }
+  function drawChart() {
+    var box = $("chart"); if (!box || !chartData) return;
+    var bs = chartData.buckets, m = chartData.metric, gl = chartData.goal, isPct = m.kind === "pct", isLine = m.kind !== "count";
+    var W = Math.max(260, box.clientWidth || 320), H = 210, L = 38, R = 10, T = 30, B = 24;
+    var pw = W - L - R, ph = H - T - B, n = bs.length, slot = pw / n;
+    var max = isPct ? 100 : niceMax(Math.max(gl, Math.max.apply(null, bs.map(function (b) { return b.sum; }))));
+    function x(i) { return L + slot * (i + .5); }
+    function y(v) { return T + ph - (v / max) * ph; }
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" height="' + H + '" role="img" aria-label="' + esc(m.label) + ' trend">';
+    [0, .5, 1].forEach(function (f) {
+      var v = max * f, yy = y(v);
+      s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#2f4b7a" stroke-width="1"/>' +
+        '<text x="' + (L - 6) + '" y="' + (yy + 4) + '" text-anchor="end">' + Math.round(v).toLocaleString() + (isPct ? "%" : "") + "</text>";
+    });
+    var ticks = n <= 7 ? bs.map(function (_, i) { return i; }) : [0, Math.floor((n - 1) / 2), n - 1];
+    ticks.forEach(function (i) {
+      var anchor = n > 7 && i === 0 ? "start" : n > 7 && i === n - 1 ? "end" : "middle";
+      var tx = anchor === "start" ? L : anchor === "end" ? W - R : x(i);
+      s += '<text x="' + tx + '" y="' + (H - 6) + '" text-anchor="' + anchor + '">' + bs[i].label + "</text>";
+    });
+    if (gl) s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(gl) + '" y2="' + y(gl) + '" stroke="#f6f3ea" stroke-width="1.5" stroke-dasharray="5 4"/>';
+    s += '<line id="cross" x1="0" x2="0" y1="' + T + '" y2="' + (T + ph) + '" stroke="#a9b9d4" stroke-width="1" visibility="hidden"/>';
+    if (isLine) {
+      var pts = []; bs.forEach(function (b, i) { if (b.has) pts.push([x(i), y(b.value)]); });
+      if (pts.length > 1) s += '<polyline fill="none" stroke="#f26b1d" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="' + pts.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ") + '"/>';
+      var rad = pts.length > 20 ? 3.5 : 4.5;
+      pts.forEach(function (p) { s += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="' + rad + '" fill="#f26b1d" stroke="#10203a" stroke-width="2"/>'; });
+    } else {
+      var bw = Math.max(2, Math.min(26, slot - 2));
+      bs.forEach(function (b, i) {
+        if (!b.has) return;
+        var top = y(b.sum), base = T + ph, hgt = Math.max(2, base - top); top = base - hgt;
+        var r = Math.min(4, bw / 2, hgt), x0 = x(i) - bw / 2, x1 = x0 + bw;
+        s += '<path fill="#f26b1d" d="M' + x0.toFixed(1) + "," + base + "V" + (top + r).toFixed(1) + "Q" + x0.toFixed(1) + "," + top.toFixed(1) + " " + (x0 + r).toFixed(1) + "," + top.toFixed(1) +
+          "H" + (x1 - r).toFixed(1) + "Q" + x1.toFixed(1) + "," + top.toFixed(1) + " " + x1.toFixed(1) + "," + (top + r).toFixed(1) + "V" + base + 'Z"/>';
+      });
+    }
+    s += "</svg>";
+    var tip = $("tip"); box.innerHTML = ""; box.appendChild(tip); box.insertAdjacentHTML("beforeend", s);
+    var svg = box.querySelector("svg"), cross = svg.querySelector("#cross");
+    function show(ev) {
+      var rect = svg.getBoundingClientRect(), rw = rect.width || W, px = (ev.clientX - rect.left) * (W / rw);
+      var i = Math.max(0, Math.min(n - 1, Math.floor((px - L) / slot))), b = bs[i];
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+      tip.innerHTML = "<strong>" + (b.has ? (isPct ? Math.round(b.value) + "% (" + b.made + " of " + b.att + ")" : b.sum.toLocaleString() + " " + m.unit) : "Nothing logged") + "</strong>" + b.long;
+      tip.style.display = "block";
+      var half = tip.offsetWidth / 2, cx = x(i) * (rw / W);
+      tip.style.left = Math.max(half, Math.min(rw - half, cx)) + "px";
+    }
+    function hide() { tip.style.display = "none"; cross.setAttribute("visibility", "hidden"); }
+    svg.addEventListener("pointermove", show); svg.addEventListener("pointerdown", show); svg.addEventListener("pointerleave", hide);
+  }
+
+  /* ---------- goals ---------- */
+  function viewGoals() {
+    var p = player();
+    var h = '<div class="top"><div><h1>Goals</h1><p>Set each player\'s daily amount and days a week</p></div></div>';
+    if (!p) return h + '<p class="empty">No players yet.</p>';
+    h += jerseys(false) + "<h2>" + esc(p.name) + "'s goals</h2><div class=\"panel\">";
+    DRILLS.forEach(function (d) {
+      var g = goal(p.id, d.id);
+      function stepper(field, v, label, step) {
+        return '<div class="goal-line"><span>' + label + '</span><div class="stepper">' +
+          '<button data-act="goal" data-drill="' + d.id + '" data-field="' + field + '" data-n="' + (-step) + '" aria-label="Lower ' + label + '"' + (v <= 0 ? " disabled" : "") + ">−</button>" +
+          '<input type="number" inputmode="numeric" min="0" value="' + v + '" data-goal="' + d.id + '" data-field="' + field + '" aria-label="' + d.name + ", " + label + '">' +
+          '<button data-act="goal" data-drill="' + d.id + '" data-field="' + field + '" data-n="' + step + '" aria-label="Raise ' + label + '">+</button></div></div>';
+      }
+      h += '<div class="goal"><div class="drill-name">' + (d.mode === "max" ? "Max " + d.name.toLowerCase() : d.name) +
+        "<small>" + (d.mode === "max" ? (g.target ? "One set of at least " + g.target + " counts as a goal day" : "Any all-out set counts as a goal day. Set reps to reach if you want a minimum.") : g.target + " " + d.unit + " counts as a goal day") + "</small></div>" +
+        stepper("target", g.target, d.mode === "max" ? "Reps to reach" : (d.unit === "min" ? "Minutes a day" : "Reps a day"), d.gstep) +
+        stepper("days", g.days, "Days a week", 1) + "</div>";
+    });
+    h += '</div><div class="stack">' +
+      (state.players.length > 1 ? '<button data-act="copyGoals">Use ' + esc(p.name) + "'s goals for everyone</button>" : "") +
+      '<button class="quiet" data-act="resetGoals">Reset ' + esc(p.name) + " to the starting goals</button></div>";
+    return h;
+  }
+
+  /* ---------- players ---------- */
+  function viewPlayers() {
+    var h = '<div class="top"><div><h1>Players</h1><p>Tap a name to change it. It saves as you type.</p></div></div>';
+    state.players.forEach(function (p, i) {
+      h += '<div class="field"><input type="text" maxlength="16" value="' + esc(p.name) + '" data-name="' + p.id + '" aria-label="Player ' + (i + 1) + ' name" placeholder="Name" autocomplete="off">' +
+        '<button class="danger" data-act="del" data-id="' + p.id + '">Remove</button></div>';
+    });
+    h += '<h2>Add a player</h2><div class="field"><input type="text" id="newName" maxlength="16" placeholder="Name" aria-label="New player name" autocomplete="off">' +
+      '<button class="primary" data-act="addPlayer"' + (state.players.length >= MAX_PLAYERS ? " disabled" : "") + ">Add player</button></div>";
+    h += '<h2>Backup</h2><p class="hint">Everything is saved on this phone only. Copy a backup now and then. To move to another phone, paste it there and restore.</p>' +
+      '<div class="stack"><button data-act="backup">Copy backup</button>' +
+      '<textarea id="restoreText" placeholder="Paste a backup here" aria-label="Backup text"></textarea>' +
+      '<button data-act="restore">Restore backup</button>' +
+      '<button class="danger" data-act="wipe">Erase all logs</button></div>';
+    return h;
+  }
+
+  var ICONS = {
+    today: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16 9.5"/></svg>',
+    progress: '<svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M5 15l4-5 4 3 6-8"/></svg>',
+    goals: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>',
+    players: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2c2.8 0 5 2.2 5 5"/></svg>'
+  };
   function render() {
-    renderPlayers();
-    renderShots();
-    renderStats();
-    renderLog();
+    var y = window.scrollY;
+    if (!state.setup) { $("nav").classList.remove("show"); $("undoBtn").classList.remove("show"); $("app").innerHTML = viewWelcome(); return; }
+    var tabs = [["today", "Today"], ["progress", "Progress"], ["goals", "Goals"], ["players", "Players"]];
+    $("nav").classList.add("show");
+    $("nav").innerHTML = tabs.map(function (t) { return '<button data-tab="' + t[0] + '"' + (state.ui.tab === t[0] ? ' class="on" aria-current="page"' : "") + ">" + ICONS[t[0]] + t[1] + "</button>"; }).join("");
+    var v = state.ui.tab;
+    $("app").innerHTML = v === "progress" ? viewProgress() : v === "goals" ? viewGoals() : v === "players" ? viewPlayers() : viewToday();
+    $("undoBtn").classList.toggle("show", v === "today" && undoStack.length > 0);
+    if (v === "progress") drawChart();
+    window.scrollTo(0, y);
+  }
+  function go(tab) { state.ui.tab = tab; save(); render(); window.scrollTo(0, 0); }
+
+  /* ---------- events ---------- */
+  $("nav").addEventListener("click", function (ev) { var b = ev.target.closest("button[data-tab]"); if (b) go(b.dataset.tab); });
+  $("undoBtn").addEventListener("click", undo);
+
+  function setGoal(pid, drillId, field, v) {
+    var g = Object.assign({}, goal(pid, drillId));
+    g[field] = field === "days" ? Math.max(0, Math.min(7, Math.round(v))) : Math.max(0, Math.min(9999, Math.round(v)));
+    if (!state.goals[pid]) state.goals[pid] = {};
+    state.goals[pid][drillId] = g; save(); render();
   }
 
-  document.getElementById("undoBtn").addEventListener("click", undo);
-  document.getElementById("copyBtn").addEventListener("click", async () => {
-    const text = summaryText();
-    try {
-      await navigator.clipboard.writeText(text);
-      toast("Summary copied");
-    } catch (e) {
-      toast("Copy not available here");
+  $("app").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-act]"); if (!b || b.disabled) return;
+    var act = b.dataset.act, p = player(), k = keyOf(viewDate);
+    if (act === "pick") { state.ui.active = b.dataset.id; save(); render(); }
+    else if (act === "go") go(b.dataset.tab);
+    else if (act === "day") { var nd = addDays(viewDate, +b.dataset.n); if (nd <= today()) { viewDate = nd; render(); } }
+    else if (act === "shot" && p) { var made = b.dataset.made === "1", sid = b.dataset.shot; mutate(k, p.id, function (e) { e.s[sid][1]++; if (made) e.s[sid][0]++; }); }
+    else if (act === "unshot" && p) {
+      var mk = b.dataset.made === "1", id2 = b.dataset.shot;
+      mutate(k, p.id, function (e) { var s = e.s[id2]; if (mk && s[0] > 0) { s[0]--; s[1]--; } else if (!mk && s[1] > s[0]) s[1]--; });
+    }
+    else if (act === "add" && p) { var d = drillById(b.dataset.drill); setDrill(p, d, val(p.id, k, d.id) + (+b.dataset.n)); }
+    else if (act === "full" && p) { var d2 = drillById(b.dataset.drill); setDrill(p, d2, Math.max(val(p.id, k, d2.id), goal(p.id, d2.id).target)); }
+    else if (act === "range") { state.ui.range = b.dataset.id; save(); render(); }
+    else if (act === "goal" && p) { setGoal(p.id, b.dataset.drill, b.dataset.field, goal(p.id, b.dataset.drill)[b.dataset.field] + (+b.dataset.n)); }
+    else if (act === "copyGoals" && p) {
+      var src = {}; DRILLS.forEach(function (d) { src[d.id] = Object.assign({}, goal(p.id, d.id)); });
+      state.players.forEach(function (pl) { state.goals[pl.id] = JSON.parse(JSON.stringify(src)); });
+      save(); render(); toast("Everyone now has " + p.name + "'s goals");
+    }
+    else if (act === "resetGoals" && p) { delete state.goals[p.id]; save(); render(); toast("Starting goals restored for " + p.name); }
+    else if (act === "addBlank") { state.players.push({ id: newId(), name: "" }); save(); render(); var ins = document.querySelectorAll("[data-name]"); ins[ins.length - 1].focus(); }
+    else if (act === "start") {
+      var named = state.players.filter(function (x) { return x.name.trim(); });
+      if (!named.length) { toast("Type at least one name"); document.querySelector("[data-name]").focus(); return; }
+      state.players = named.map(function (x) { return { id: x.id, name: x.name.trim() }; });
+      state.ui.active = state.players[0].id; state.setup = true; state.ui.tab = "today"; save(); render();
+    }
+    else if (act === "addPlayer") {
+      var name = ($("newName").value || "").trim();
+      if (!name) { toast("Type a name first"); $("newName").focus(); return; }
+      var np = { id: newId(), name: name }; state.players.push(np); state.ui.active = np.id; save(); render(); toast(name + " added");
+    }
+    else if (act === "del") {
+      var target = state.players.find(function (x) { return x.id === b.dataset.id; }); if (!target) return;
+      ask("Remove " + target.name + " and everything logged for him? This can't be undone.", "Remove", function () {
+        state.players = state.players.filter(function (x) { return x.id !== target.id; });
+        Object.keys(state.days).forEach(function (d) { delete state.days[d][target.id]; });
+        delete state.goals[target.id]; undoStack = [];
+        if (state.ui.active === target.id) state.ui.active = state.players[0] ? state.players[0].id : null;
+        save(); render(); toast(target.name + " removed");
+      });
+    }
+    else if (act === "backup") {
+      var text = JSON.stringify({ players: state.players, days: state.days, goals: state.goals });
+      $("restoreText").value = text;
+      try { navigator.clipboard.writeText(text).then(function () { toast("Backup copied"); }, function () { toast("Select the text in the box and copy it"); }); }
+      catch (e) { toast("Select the text in the box and copy it"); }
+    }
+    else if (act === "restore") {
+      var parsed = null;
+      try { parsed = JSON.parse($("restoreText").value); } catch (e) {}
+      if (!valid(parsed) || !parsed.players.length || !parsed.players.every(function (x) { return x && typeof x.id === "string" && typeof x.name === "string"; })) { toast("That text isn't a backup from this app"); return; }
+      ask("Replace everything on this phone with the pasted backup?", "Restore", function () {
+        state.players = parsed.players.slice(0, MAX_PLAYERS).map(function (x) { return { id: x.id, name: x.name.slice(0, 16) }; });
+        state.days = parsed.days; state.goals = parsed.goals && typeof parsed.goals === "object" ? parsed.goals : {}; undoStack = [];
+        state.ui.active = state.players[0].id; save(); render(); toast("Backup restored");
+      });
+    }
+    else if (act === "wipe") {
+      ask("Erase every logged shot and workout? Names and goals stay. This can't be undone.", "Erase", function () { state.days = {}; undoStack = []; save(); render(); toast("All logs erased"); });
     }
   });
-  document.getElementById("resetBtn").addEventListener("click", () => {
-    if (!confirm("Reset all shots?")) return;
-    const names = state.players.map(p => p.name);
-    state = defaultState();
-    state.players.forEach((p, i) => p.name = names[i]);
-    save(); render(); toast("Reset");
-  });
 
-  // Keyboard shortcuts: 1-3 pick shooter, U = undo
-  document.addEventListener("keydown", (e) => {
-    if (e.target.tagName === "INPUT") return;
-    if (["1","2","3"].includes(e.key)) { state.activePlayer = Number(e.key) - 1; save(); render(); }
-    if (e.key === "u" || e.key === "U") undo();
+  $("app").addEventListener("change", function (ev) {
+    var el = ev.target, p = player();
+    if (el.id === "metricSel") { state.ui.metric = el.value; save(); render(); }
+    else if (el.dataset.drill && p) { setDrill(p, drillById(el.dataset.drill), +el.value || 0); render(); }
+    else if (el.dataset.goal && p) setGoal(p.id, el.dataset.goal, el.dataset.field, +el.value || 0);
   });
+  $("app").addEventListener("focusin", function (ev) { if (ev.target.type === "number") ev.target.select(); });
+  $("app").addEventListener("input", function (ev) {
+    var el = ev.target;
+    if (el.dataset.name) {
+      var pl = state.players.find(function (x) { return x.id === el.dataset.name; });
+      if (pl) { pl.name = state.setup ? (el.value.trim() || "Player") : el.value; save(); }
+    }
+  });
+  $("app").addEventListener("keydown", function (ev) {
+    if (ev.key !== "Enter") return;
+    if (ev.target.id === "newName") { var b = document.querySelector('[data-act="addPlayer"]'); if (b) b.click(); }
+    else if (ev.target.type === "number" || ev.target.dataset.name) ev.target.blur();
+  });
+  var rz; window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(function () { if (state.setup && state.ui.tab === "progress") drawChart(); }, 150); });
 
   render();
+})();
 </script>
 </body>
 </html>
